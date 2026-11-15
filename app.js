@@ -1,85 +1,32 @@
-// app.js - منطق التشغيل والربط مع config.js والـ API
-
-let allProducts = [];
-let allOffers = [];
-let allCategories = [];
+let storeData = {};
 let currentCategory = "all";
 let cart = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
-  applyThemeAndInfo();
-  await initData();
-  renderOffers();
-  renderCategories();
-  renderProducts();
+  await loadStoreData();
 });
 
-// تطبيق الألوان وبيانات المتجر من config.js
-function applyThemeAndInfo() {
-  const { store, theme } = APP_CONFIG;
-  document.title = `${store.name} | ${store.slogan}`;
-  document.getElementById("store-name").textContent = store.name;
-  document.getElementById("store-slogan").textContent = store.slogan;
-
-  const root = document.documentElement;
-  root.style.setProperty("--primary", theme.primaryColor);
-  root.style.setProperty("--primary-dark", theme.primaryDark);
-  root.style.setProperty("--secondary", theme.secondaryColor);
-  root.style.setProperty("--bg", theme.backgroundColor);
-  root.style.setProperty("--card-bg", theme.cardBackground);
-  root.style.setProperty("--text", theme.textColor);
-}
-
-// جلب البيانات (إما من الـ API الفعلي أو من المتغيرات المحلية)
-async function fetchFromApiOrConfig(endpoint, fallbackData) {
-  if (APP_CONFIG.api.useMockData) {
-    return fallbackData;
-  }
+// دالة الـ Fetch لجلب بيانات الـ API
+async function loadStoreData() {
   try {
-    const res = await fetch(`${APP_CONFIG.api.baseUrl}${endpoint}`, {
-      headers: APP_CONFIG.api.headers
-    });
-    if (!res.ok) throw new Error("API Error");
-    return await res.json();
-  } catch (err) {
-    console.warn("تعذر الاتصال بالـ API، تم استخدام البيانات المحلية:", err);
-    return fallbackData;
+    const response = await fetch("products.json"); // هنا بيعمل fetch لملف الـ JSON المحلي أو رابط الـ API
+    if (!response.ok) throw new Error("فشل تحميل البيانات");
+    storeData = await response.json();
+
+    document.getElementById("store-name").textContent = storeData.store.name;
+    document.getElementById("store-slogan").textContent = storeData.store.slogan;
+
+    renderCategories();
+    renderProducts();
+  } catch (error) {
+    console.error("API Fetch Error:", error);
+    document.getElementById("products-container").innerHTML = "<p style='color:red; text-align:center;'>حدث خطأ أثناء تحميل المنتجات.</p>";
   }
 }
 
-async function initData() {
-  allCategories = await fetchFromApiOrConfig(APP_CONFIG.api.endpoints.categories, APP_CONFIG.categories);
-  allOffers = await fetchFromApiOrConfig(APP_CONFIG.api.endpoints.offers, APP_CONFIG.offers);
-  allProducts = await fetchFromApiOrConfig(APP_CONFIG.api.endpoints.products, APP_CONFIG.products);
-}
-
-// عرض العروض
-function renderOffers() {
-  const container = document.getElementById("offers-container");
-  const currency = APP_CONFIG.store.currency;
-
-  container.innerHTML = allOffers.map(offer => `
-    <div class="offer-card">
-      <div>
-        <span class="offer-badge">${offer.badge}</span>
-        <h3>${offer.title}</h3>
-        <p>${offer.description}</p>
-      </div>
-      <div class="offer-footer">
-        <div>
-          <span class="price">${offer.price} ${currency}</span>
-          ${offer.oldPrice ? `<span class="old-price">${offer.oldPrice} ${currency}</span>` : ""}
-        </div>
-        <button class="add-btn" onclick="addToCart('${offer.id}', '${offer.title}', 'عرض خاص', ${offer.price})">+ أضف للسلة</button>
-      </div>
-    </div>
-  `).join("");
-}
-
-// عرض أزرار الأقسام
 function renderCategories() {
   const container = document.getElementById("categories-container");
-  container.innerHTML = allCategories.map(cat => `
+  container.innerHTML = storeData.categories.map(cat => `
     <button class="cat-btn ${cat.id === currentCategory ? "active" : ""}" onclick="selectCategory('${cat.id}')">
       ${cat.icon} ${cat.name}
     </button>
@@ -92,62 +39,60 @@ function selectCategory(catId) {
   renderProducts();
 }
 
-function filterProducts() {
-  renderProducts();
-}
-
-// عرض المنتجات حسب القسم والبحث
+// عرض المنتجات مقسمة تحت الأقسام الفرعية بعد الـ Fetch
 function renderProducts() {
   const container = document.getElementById("products-container");
   const searchQuery = document.getElementById("search-input").value.trim().toLowerCase();
-  const currency = APP_CONFIG.store.currency;
+  const currency = storeData.store.currency;
 
-  const filtered = allProducts.filter(p => {
+  const filtered = storeData.products.filter(p => {
     const matchesCat = currentCategory === "all" || p.category === currentCategory;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery) || (p.weight && p.weight.toLowerCase().includes(searchQuery));
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery);
     return matchesCat && matchesSearch;
   });
 
   if (!filtered.length) {
-    container.innerHTML = `<p style="grid-column: 1/-1; text-align:center; padding:2rem; color:#666;">لا توجد منتجات مطابقة لبحثك.</p>`;
+    container.innerHTML = `<p style="grid-column: 1/-1; text-align:center; padding:2rem; color:#666;">لا توجد منتجات مطابقة.</p>`;
     return;
   }
 
-  container.innerHTML = filtered.map(p => {
-    const catObj = allCategories.find(c => c.id === p.category);
-    const catName = catObj ? catObj.name : "";
+  // تجميع المنتجات تحت الأقسام الفرعية (Sub-categories)
+  const grouped = {};
+  filtered.forEach(p => {
+    const sub = p.subCategory || "منتجات عامة";
+    if (!grouped[sub]) grouped[sub] = [];
+    grouped[sub].push(p);
+  });
 
-    return `
-      <div class="product-card">
-        <div>
-          <span class="product-cat">${catName}</span>
-          <h3 class="product-name">${p.name}</h3>
-          <span class="product-weight">الكمية / الوزن: ${p.weight}</span>
-        </div>
-        <div class="product-bottom">
-          <div>
-            ${p.price !== null
-              ? `<span class="price">${p.price} ${currency}</span>${p.oldPrice ? `<span class="old-price">${p.oldPrice} ${currency}</span>` : ""}`
-              : `<span class="note-badge">${p.note || "حسب الطلب"}</span>`
-            }
-          </div>
-          <button class="add-btn" onclick="addToCart('${p.id}', '${p.name}', '${p.weight}', ${p.price || 0})">
-            ${p.price !== null ? "+ أضف" : "اطلب"}
-          </button>
-        </div>
+  let html = "";
+  for (const [subCatName, productsList] of Object.entries(grouped)) {
+    html += `
+      <div style="grid-column: 1 / -1; margin-top: 1.5rem; margin-bottom: 0.5rem;">
+        <h3 style="font-size: 1.15rem; color: var(--primary-dark); border-right: 4px solid var(--secondary); padding-right: 10px; font-weight: 800;">${subCatName}</h3>
       </div>
     `;
-  }).join("");
+
+    html += productsList.map(p => `
+      <div class="product-card">
+        <div>
+          <h3 class="product-name">${p.name}</h3>
+          <span class="product-weight">الكمية: ${p.weight}</span>
+        </div>
+        <div class="product-bottom">
+          <span class="price">${p.price} ${currency}</span>
+          <button class="add-btn" onclick="addToCart('${p.id}', '${p.name}', '${p.weight}', ${p.price})">+ أضف</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  container.innerHTML = html;
 }
 
-// إدارة السلة
 function addToCart(id, name, weight, price) {
   const existing = cart.find(item => item.id === id);
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    cart.push({ id, name, weight, price, qty: 1 });
-  }
+  if (existing) { existing.qty += 1; }
+  else { cart.push({ id, name, weight, price, qty: 1 }); }
   updateCartUI();
 }
 
@@ -155,39 +100,31 @@ function changeQty(id, delta) {
   const item = cart.find(i => i.id === id);
   if (!item) return;
   item.qty += delta;
-  if (item.qty <= 0) {
-    cart = cart.filter(i => i.id !== id);
-  }
+  if (item.qty <= 0) { cart = cart.filter(i => i.id !== id); }
   updateCartUI();
 }
 
 function updateCartUI() {
-  const countEl = document.getElementById("cart-count");
+  document.getElementById("cart-count").textContent = cart.reduce((sum, i) => sum + i.qty, 0);
+  const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+  document.getElementById("cart-total").textContent = `${total} ${storeData.store.currency}`;
+
   const itemsEl = document.getElementById("cart-items");
-  const totalEl = document.getElementById("cart-total");
-  const currency = APP_CONFIG.store.currency;
-
-  const totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
-  const totalPrice = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-
-  countEl.textContent = totalQty;
-  totalEl.textContent = `${totalPrice} ${currency}`;
-
   if (!cart.length) {
-    itemsEl.innerHTML = `<p style="text-align:center; color:#888; margin-top:2rem;">السلة فارغة حالياً</p>`;
+    itemsEl.innerHTML = `<p style="text-align:center; color:#888; margin-top:2rem;">السلة فارغة</p>`;
     return;
   }
 
   itemsEl.innerHTML = cart.map(item => `
-    <div class="cart-item">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0; border-bottom:1px solid #eee;">
       <div>
-        <div style="font-weight:700; font-size:0.95rem;">${item.name}</div>
-        <div style="font-size:0.8rem; color:#666;">${item.weight} • ${item.price > 0 ? item.price + " " + currency : "تسعير حسب الطلب"}</div>
+        <div style="font-weight:700;">${item.name}</div>
+        <div style="font-size:0.8rem; color:#666;">${item.weight} • ${item.price} ${storeData.store.currency}</div>
       </div>
-      <div class="qty-controls">
-        <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
-        <span>${item.qty}</span>
-        <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+      <div>
+        <button onclick="changeQty('${item.id}', -1)">-</button>
+        <span style="padding:0 6px;">${item.qty}</span>
+        <button onclick="changeQty('${item.id}', 1)">+</button>
       </div>
     </div>
   `).join("");
@@ -198,21 +135,13 @@ function toggleCart() {
 }
 
 function sendOrderToWhatsapp() {
-  if (!cart.length) {
-    alert("السلة فارغة! أضف منتجات أولاً.");
-    return;
-  }
-  const currency = APP_CONFIG.store.currency;
-  let msg = `مرحباً *${APP_CONFIG.store.name}* 🌿\nأرغب في طلب المنتجات التالية:\n\n`;
+  if (!cart.length) { alert("السلة فارغة!"); return; }
+  let msg = `مرحباً *${storeData.store.name}* 🌿\nأرغب في طلب:\n\n`;
   let total = 0;
-
-  cart.forEach((item, index) => {
-    const sub = item.price * item.qty;
-    total += sub;
-    msg += `${index + 1}. *${item.name}* (${item.weight}) × ${item.qty} = ${item.price > 0 ? sub + " " + currency : "حسب الطلب"}\n`;
+  cart.forEach((i, idx) => {
+    total += i.price * i.qty;
+    msg += `${idx + 1}. *${i.name}* (${i.weight}) × ${i.qty} = ${i.price * i.qty} ${storeData.store.currency}\n`;
   });
-
-  msg += `\n*الإجمالي التقديري:* ${total} ${currency}`;
-  const url = `https://wa.me/${APP_CONFIG.store.whatsappNumber}?text=${encodeURIComponent(msg)}`;
-  window.open(url, "_blank");
+  msg += `\n*الإجمالي:* ${total} ${storeData.store.currency}`;
+  window.open(`https://wa.me/${storeData.store.whatsappNumber}?text=${encodeURIComponent(msg)}`, "_blank");
 }
