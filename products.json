@@ -1,0 +1,105 @@
+{
+  "store": {
+    "name": "كاف للمنتجات الطبيعية",
+    "slogan": "تكفيك وزيادة • طعم الطبيعة، جودة كاف",
+    "currency": "ج.م",
+    "whatsappNumber": "201000000000"
+  },
+  "categories": [
+    { "id": "all", "name": "جميع المنتجات", "icon": "🌿" },
+    { "id": "honey", "name": "العسل الطبيعي", "icon": "🍯" },
+    { "id": "dairy", "name": "الألبان والأجبان", "icon": "🥛" },
+    { "id": "oils", "name": "الزيوت الطبيعية", "icon": "🫒" },
+    { "id": "spices", "name": "التوابل الخام", "icon": "🧂" },
+    { "id": "nuts", "name": "المكسرات الصحية", "icon": "🥜" },
+    { "id": "coffee", "name": "البن والشاي", "icon": "☕" },
+    { "id": "luncheon", "name": "اللانشون الطبيعي", "icon": "🥩" },
+    { "id": "care", "name": "العناية الطبيعية", "icon": "🧴" },
+    { "id": "misc", "name": "منتجات متنوعة", "icon": "🌾" },
+    { "id": "icecream", "name": "الآيس كريم الطبيعي", "icon": "🍨" }
+  ],
+  "offers": [
+    {
+      "id": "off-1",
+      "title": "عرض مجموعة الحمام المغربي الأصلية",
+      "description": "طمي مغربي + تبريمة + صابون + ليفة + زيت جاف ترطيب",
+      "price": 600,
+      "oldPrice": 750,
+      "badge": "عرض متكامل"
+    },
+    {
+      "id": "off-2",
+      "title": "عسل موالح عضوية (1 كيلو)",
+      "description": "عسل موالح طبيعي نقي عالي الجودة بخصم خاص",
+      "price": 350,
+      "oldPrice": 390,
+      "badge": "وفر 40 ج.م"
+    }
+  ],
+  "products": [
+    {
+      "id": "h1",
+      "category": "honey",
+      "subCategory": "عسل نحل بري وجبلي",
+      "name": "عسل برسيم حجازي صحراوي",
+      "weight": "1 ك",
+      "price": 300
+    },
+    {
+      "id": "h2",
+      "category": "honey",
+      "subCategory": "عسل نحل بري وجبلي",
+      "name": "عسل ينسون عضوي",
+      "weight": "1 ك",
+      "price": 320
+    },
+    {
+      "id": "h3",
+      "category": "honey",
+      "subCategory": "أعناق سدر فاخرة",
+      "name": "عسل سدر جبلي سيناوي",
+      "weight": "1 ك",
+      "price": 1300
+    },
+    {
+      "id": "d1",
+      "category": "dairy",
+      "subCategory": "الألبان والزبادي",
+      "name": "زبادي بلدي",
+      "weight": "140 جرام",
+      "price": 15
+    },
+    {
+      "id": "d2",
+      "category": "dairy",
+      "subCategory": "الألبان والزبادي",
+      "name": "لبن جاموسي كامل الدسم",
+      "weight": "1 ك",
+      "price": 45
+    },
+    {
+      "id": "o1",
+      "category": "oils",
+      "subCategory": "زيوت الزيتون البكر",
+      "name": "زيت زيتون سيناوي بكر ممتاز ع البارد",
+      "weight": "1 لتر",
+      "price": 600
+    },
+    {
+      "id": "s1",
+      "category": "spices",
+      "subCategory": "توابل وبهارات خام",
+      "name": "زنجبيل مطحون",
+      "weight": "100 جرام",
+      "price": 60
+    },
+    {
+      "id": "ic1",
+      "category": "icecream",
+      "subCategory": "آيس كريم طبيعي فاخر",
+      "name": "آيس كريم مانجو 🥭",
+      "weight": "⅛ كيلو (متاح أوزان أخرى)",
+      "price": 40
+    }
+  ]
+}
